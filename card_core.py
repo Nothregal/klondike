@@ -4,14 +4,24 @@ from dataclasses import dataclass
 from enum import Enum
 
 class Suit(Enum):
-    SPADES = ('♠', 1) 
-    DIAMONDS = ('♦', 2)
-    CLUBS = ('♣', 3)
-    HEARTS = ('♥', 4)
+    SPADES = ('♠', 'S', 1) 
+    DIAMONDS = ('♦', 'D', 2)
+    CLUBS = ('♣', 'C', 3)
+    HEARTS = ('♥', 'H', 4)
     
-    def __init__(self, symbol, weight):
+    def __init__(self, symbol, suit_text, weight):
         self.symbol = symbol
+        self.suit_text = suit_text
         self.weight = weight
+        
+    @classmethod
+    def is_valid(cls, item):
+        return any(item in (member.symbol, member.suit_text) for member in cls)
+            
+    @classmethod
+    def return_symbol(cls, item):
+        return next((m for m in cls if item in m.value), None)
+
     
 class Rank(Enum):
     ACE = ('A', 1)
@@ -28,6 +38,20 @@ class Rank(Enum):
     QUEEN = ('Q', 12)
     KING = ('K', 13)
     
+    @classmethod
+    def is_valid(cls, item):
+        return any(item in member.value for member in cls)
+    
+    @classmethod
+    def return_weight(cls, item):
+        rank_data = next((m for m in cls if item in m.value), None)
+        return rank_data.weight
+    
+    @classmethod
+    def return_symbol(cls, symbol_text):
+        """Loops through all ranks and matches the input string to self.symbol."""
+        return next((r for r in cls if symbol_text == r.symbol), None)
+
     def __init__ (self, symbol, weight):
         self.symbol = symbol
         self.weight = weight
@@ -54,5 +78,5 @@ class Card:
         if self.is_joker:
             return "Card(is_joker=True)"
         return f"Card(rank='{self.rank.name}' suit='{self.suit.name}')"
-        
+
 
