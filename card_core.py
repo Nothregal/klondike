@@ -22,7 +22,6 @@ class Suit(Enum):
     def return_symbol(cls, item):
         return next((m for m in cls if item in m.value), None)
 
-    
 class Rank(Enum):
     ACE = ('A', 1)
     TWO = ('2', 2)
@@ -45,7 +44,9 @@ class Rank(Enum):
     @classmethod
     def return_weight(cls, item):
         rank_data = next((m for m in cls if item in m.value), None)
-        return rank_data.weight
+        if rank_data is not None:
+            return rank_data.weight
+        return rank_data
     
     @classmethod
     def return_symbol(cls, symbol_text):

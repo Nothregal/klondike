@@ -24,13 +24,17 @@ class Deck:
     def show_card(self, index = None):
         if index is None:
             index = len(self) - 1
-        return self.cards[index]
+        if not self.cards:
+            return None
+        else:
+            return self.cards[index]
         
     def draw(self) -> Card:
         """Pop from the end of the lsit"""
         if not self.cards:
-            raise ValueError("The deck is empty.")
-        return self.cards.pop()
+            return None
+        else:
+            return self.cards.pop()
         
     def __len__(self):
         return len(self.cards)
@@ -57,12 +61,7 @@ class Board:
                 if x == y:
                     card.is_facedown = False
                 self.tableaus[x].add(card)
-    
-    # Obtain the top card of the foundation
-    def get_foundation_top(self, index):
-        pile = self.foundations[index]
-        return pile[-1] if pile else ""
-    
+       
     # Obtain the longest tableau length to identify the loop range
     def get_longest_tableau(self):
         longest = 0
@@ -79,10 +78,10 @@ class Board:
         stock_state = self.stock.show_card(len(self.stock) - 1) if len(self.stock) > 0 else "" 
         waste_state = self.waste.show_card(len(self.waste) - 1) if len(self.waste) > 0 else "" 
         
-        spade_state = self.get_foundation_top(0)
-        diamond_state = self.get_foundation_top(1)
-        club_state = self.get_foundation_top(2)
-        heart_state = self.get_foundation_top(3)
+        spade_state = self.foundations[0].show_card() if self.foundations[0].show_card() is not None else ""
+        diamond_state = self.foundations[1].show_card() if self.foundations[1].show_card() is not None else ""
+        club_state = self.foundations[2].show_card() if self.foundations[2].show_card() is not None else ""
+        heart_state = self.foundations[3].show_card() if self.foundations[3].show_card() is not None else ""
         
         print("") # Line padding
         self.show_waste()
@@ -113,19 +112,32 @@ class Board:
                 split_string = command.upper().strip().split(" ")
             
                 option = split_string[0]
-                if option == "MOVE":
-                    self.attempt_move(split_string[1], split_string [-1])
-                if option == "COMMANDS":
+                if option in ["MOVE", "M"]:
+                    self.attempt_move(split_string[1], split_string [2:])
+                if option == ["COMMANDS", "C"]:
                     self.show_commands()
-                if option == "DRAW":
+                if option == "DRAW" or option == "D":
                     self.game_draw(3)
-                if option == "QUIT":
+                if option in ["QUIT"]:
                     return
-                if option == "EXIT":
+                if option in ["EXIT"]:
                     sys.exit(0)
             except IndexError:
                 print(f"Invalid Input")
+                
+            exit = self.check_win()
     
+    def check_win(self):
+        """ Check if all the cards are in the foundations """
+        done = True
+        for foundation in self.foundations:
+            done = False if (len(foundation) < 13) else True
+            
+        if done:
+            print(f"----------   You Win!   ----------")
+            return done
+        return done
+        
     def show_waste(self):
         """Lists the cards in the waste pile in order of obtainability"""
         
@@ -150,6 +162,8 @@ class Board:
             self.recycle()
         
         for x in range(num_cards):
+            if not self.stock:
+                return
             card = self.stock.draw()
             card.is_facedown = False
             self.waste.add(card)
@@ -170,11 +184,70 @@ class Board:
                         return tableau, idx
                         
         return None, -1
+    
+    def tableau_move_valid(self, source, index, tableau):
+        """ Passes user_card and tableau through serires of checks to see if movement is valid """
+        suit_weight = {'S': 1, 'C': 1, 'D':0, 'H': 0}
+        user_card = source.show_card(index)
         
-    def attempt_move(self, card_str, tableau):
+        if (not tableau.isdigit()) or int(tableau) > 7 or int(tableau) < 1:
+                    print(f"Invalid tableau")
+                    return
+        
+        # Check if card is already in destination tableau
+        if source is self.tableaus[int(tableau)-1]:
+            print(f"Invaild Move: Card already in tableau")
+            return
+            
+        # get card from the bottom of tableau
+        tableau_card = self.tableaus[int(tableau)-1].show_card() #Adjust to zero-index
+        # Compare card to move, with tableau card
+        # Check if card is a K and the tableau is empty
+        if not self.tableaus[int(tableau)-1]:
+            if user_card.rank.symbol != "K":
+                print(f"Invalid Move: Only a king can be moved into an empty tableau")
+                return
+        else:
+            # check if card to move's value is directly below tableau card's value
+            if user_card.rank.weight != tableau_card.rank.weight - 1:
+                print(f"Invalid Move: Card value Incompaitble: {user_card.rank.weight} {tableau_card.rank.weight}")
+                return
+            # Check if suit is alternating via "colors". Diamond and Hearts are Red while Clubs and Spades are Black
+            if suit_weight[user_card.suit.suit_text] == suit_weight[tableau_card.suit.suit_text]:
+                print(f"Invalid Move: Suit Incompatible: {user_card.suit.symbol} {tableau_card.suit.symbol}")
+                return
+        
+        self.move_cards(source, index, int(tableau) -1)
+    
+    def foundation_move_valid(self, source, index):
+        
+        # Obtain card to move
+        user_card = source.show_card(index)
+        
+        # Obtain suit for locate suit foundation index
+        suit_index = user_card.suit.weight - 1
+        foundation = self.foundations[suit_index]
+        
+        # Check if foundation is empty card is not Ace
+        if len(foundation) == 0:
+            if user_card.rank.symbol != "A":
+                print(f"Invalid Move: Only an Ace can be moved into an empty foundation")
+                return
+        else:
+            # Check if card to move is the next card in sequence
+            foundation_card = foundation.show_card()
+            if user_card.rank.weight != foundation_card.rank.weight + 1:
+                print(f"Invalid Move: Card not next in Sequence")
+                return
+        
+        self.move_cards(source, index)        
+        
+    def attempt_move(self, card_str, destination):
         """Accepts a card_str from the command and checks if the card is currently available for movement. 
             Then checks if movement is valid and if true proceeds to move card and associated cards to the tableau"""
         valid = True
+
+        tableau = None if not destination else destination[-1]
 
         suit = card_str[-1]
         rank = card_str[0:len(card_str)-1]
@@ -182,59 +255,33 @@ class Board:
         matched_suit = Suit.return_symbol(suit)
         matched_rank = Rank.return_symbol(rank)
         
-        print(f"Card Suit: {matched_suit}")
-        print(f"Card rank: {matched_rank}")
-        
         if not matched_suit or not matched_rank:
             print(f"Invalid card")
-            valid = False
-        elif (not tableau.isdigit()) or int(tableau) > 7 or int(tableau) < 1:
-            print(f"Invalid tableau")
-            valid = False
+            return
         else:
             user_card = Card(rank = matched_rank, suit = matched_suit, is_facedown=True)
             source, index = self.find_card_and_pile(user_card)
             
             if source is None:
                 print(f"Cannot find Card")
-                valid = False
-        
-        suit_weight = {'S': 1, 'C': 1, 'D':0, 'H': 0}
-        
-        # get card from the bottom of tableau
-        tableau_card = self.tableaus[int(tableau)-1].show_card() #Adjust to zero-index
-        # Compare card to move, with tableau card
-        # Check if card is a K and the tableau is empty
-        print(f"{user_card.rank.weight} : {tableau_card.rank.weight}")
-        if not self.tableaus[int(tableau)-1]:
-            if card.rank.symbol != "K":
-                print(f"Invalid Move: Only a king can be moved in an empty tableau")
-                valid = False
+                return
+        if tableau is not None:
+            self.tableau_move_valid(source, index, tableau)
         else:
-            # check if card to move's value is directly below tableau card's value
-            if user_card.rank.weight != tableau_card.rank.weight - 1:
-                print(f"Invalid Move: Card value Incompaitble: {Rank.return_weight(card)} {tableau_card.rank.weight}")
-                valid = False
-            # Check if suit is alternating via "colors". Diamond and Hearts are Red while Clubs and Spades are Black
-            if suit_weight[user_card.suit.suit_text] == suit_weight[tableau_card.suit.suit_text]:
-                print(f"Invalid Move: Suit Incompatible: {user_card.suit.symbol} {tableau_card.suit.symbol}")
-                valid = False
-        # Check if card is already in destination tableau
-        if source is self.tableaus[int(tableau)-1]:
-            print(f"Invaild Move: Card already in tableau")
-            valid = False
-        
-        if valid:
-            self.move_cards(source, index, int(tableau) - 1)
-    
-    def move_cards(self, source, index, tableau_index):
+            self.foundation_move_valid(source, index)
+            
+            
+    def move_cards(self, source, index, tableau_index=None):
         """Once attempt_move has cleared all checks, move the card and connected cards to the new tableau"""
         placeholder_deck = Deck()
         for r in range(index, len(source)):
             placeholder_deck.add(source.draw())
         
-        while placeholder_deck:
-            self.tableaus[tableau_index].add(placeholder_deck.draw())
+        if tableau_index is not None:        
+            while placeholder_deck:
+                self.tableaus[tableau_index].add(placeholder_deck.draw())
+        else:
+            self.foundations[placeholder_deck.show_card().suit.weight - 1].add(placeholder_deck.draw())            
             
         self.post_move_cleanup(source)
      
@@ -246,10 +293,9 @@ class Board:
     def show_commands(self):
         """Shows the list of commands the user can use during gameplay"""
         print(f"\nCLI Klondike commands")
-        print(f"Move 'card' to 'tableau #' - Move card and connected cards to tableau")
+        print(f"Move 'card' to 'tableau #' - Move card and connected cards to tableau # or to foundation")
         print(f"    ex. Move 4S (4 of Spades) to 2")
-        print(f"Raise 'card' - Move card to foundation")
-        print(f"    ex. Raise AC (Ace of Clubs)")
+        print(f"    ex. Move AS (Ace of Spades)")
         print(f"Draw - draws 3 cards from stock and places it on the waste")
         print(f"Save 'filename' - Saves current game to filename")
         print(f"Load 'filename' - Loads game from filename")
