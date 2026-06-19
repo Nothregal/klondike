@@ -1,13 +1,19 @@
 #!/usr/bin/env python3 
 
+import re
 import sys
 import secrets
+from pathlib import Path
 from card_core import Card, Suit, Rank
+import json
 
 class Deck:
     def __init__(self):
         #Generate a standard deck layout
         self.cards = []
+    
+    def __iter__(self):
+        return iter(self.cards)
     
     def add_standard_deck(self):
         self.cards.extend(Card(rank, suit) for suit in Suit for rank in Rank)
@@ -114,19 +120,55 @@ class Board:
                 option = split_string[0]
                 if option in ["MOVE", "M"]:
                     self.attempt_move(split_string[1], split_string [2:])
-                if option == ["COMMANDS", "C"]:
+                elif option == ["COMMANDS", "C"]:
                     self.show_commands()
-                if option == "DRAW" or option == "D":
+                elif option == "DRAW" or option == "D":
                     self.game_draw(3)
-                if option in ["QUIT"]:
+                elif option in ["SAVE", "S"]:
+                    self.save_game(split_string[1])
+                elif option in ["QUIT"]:
                     return
-                if option in ["EXIT"]:
+                elif option in ["EXIT"]:
                     sys.exit(0)
+                else:
+                    print(f"Invalid Input")
             except IndexError:
                 print(f"Invalid Input")
                 
             exit = self.check_win()
-    
+     
+    def clean_filename(self, filename):
+        pattern = r'[<>:"/\\|?*]'
+
+        return False if re.search(filename, pattern) else True    
+        
+    def save_game(self, filename = ""):
+        print(f"Saving Game...")
+        filepath = Path.cwd() / "saves"
+
+        filepath.mkdir(parents=True, exist_ok=True)
+
+        if filename == "" or not self.clean_filename(filename):
+            print("Invalid filename")
+        else:
+            filepath = (filepath / f"{filename}.json")
+            if filepath.exists():
+                confirmation = input("File already exists. Overwrite? Y-yes: ")
+                if confirmation in ['Y', "y"]:
+                    self.save_data(filepath)
+            else:
+                self.save_data(filepath)
+                    
+    def save_data(self, filepath):
+        data = {"stock": [(card.rank.symbol,card.suit.suit_text) for card in self.stock], 
+            "waste": [(card.rank.symbol,card.suit.suit_text) for card in self.waste],
+            "foundations": [[(card.rank.symbol,card.suit.suit_text) for card in deck] for deck in self.foundations],
+            "tableaus": [[(card.rank.symbol,card.suit.suit_text) for card in deck] for deck in self.tableaus]}
+        
+        with filepath.open("w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
+            input("\nSave Complete, press Enter to continue")
+
     def check_win(self):
         """ Check if all the cards are in the foundations """
         done = True
