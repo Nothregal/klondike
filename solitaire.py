@@ -36,7 +36,7 @@ class Deck:
             return self.cards[index]
         
     def draw(self) -> Card:
-        """Pop from the end of the lsit"""
+        """Pop from the end of the list"""
         if not self.cards:
             return None
         else:
@@ -142,11 +142,13 @@ class Board:
             exit = self.check_win()
      
     def clean_filename(self, filename):
+        """ Check if filename is valid"""
         pattern = r'[<>:"/\\|?*]'
 
         return False if re.search(filename, pattern) else True    
         
     def save_game(self, filename = ""):
+        """ Check if filename exists and confirm overwrite"""
         print(f"Saving Game...")
         filepath = Path.cwd() / "saves"
 
@@ -164,6 +166,7 @@ class Board:
                 self.save_data(filepath)
 
     def save_data(self, filepath):
+        """ Save card data to dictionary to put into JSON file """
         data = {"stock": [(card.rank.symbol,card.suit.suit_text) for card in self.stock], 
             "waste": [(card.rank.symbol,card.suit.suit_text) for card in self.waste],
             "foundations": [[(card.rank.symbol,card.suit.suit_text) for card in deck] for deck in self.foundations],
@@ -315,8 +318,7 @@ class Board:
             self.tableau_move_valid(source, index, tableau)
         else:
             self.foundation_move_valid(source, index)
-            
-            
+
     def move_cards(self, source, index, tableau_index=None):
         """Once attempt_move has cleared all checks, move the card and connected cards to the new tableau"""
         placeholder_deck = Deck()
