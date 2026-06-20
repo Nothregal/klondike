@@ -171,10 +171,10 @@ class Board:
 
     def save_data(self, filepath):
         """ Save card data to dictionary to put into JSON file """
-        data = {"stock": [(card.rank.symbol,card.suit.suit_text) for card in self.stock], 
-            "waste": [(card.rank.symbol,card.suit.suit_text) for card in self.waste],
-            "foundations": [[(card.rank.symbol,card.suit.suit_text) for card in deck] for deck in self.foundations],
-            "tableaus": [[(card.rank.symbol,card.suit.suit_text) for card in deck] for deck in self.tableaus]}
+        data = {"stock": [card.data() for card in self.stock],
+            "waste": [card.data() for card in self.waste],
+            "foundations": [[card.data() for card in deck] for deck in self.foundations],
+            "tableaus": [[card.data() for card in deck] for deck in self.tableaus]}
         
         with filepath.open("w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
