@@ -51,14 +51,16 @@ class Deck:
 class Board:
     def __init__(self):
         # Generate containers for the gameboard
+        self.initialize_deck()
+        self.initialize_board()
+    
+    def initialize_deck(self):
+        # Create new deck objects for game containers
         self.stock = Deck()
-        self.stock.add_standard_deck()
         self.waste = Deck()
         self.tableaus = [Deck() for _ in range(7)]
         self.foundations = [Deck() for _ in range(4)]
-        self.stock.shuffle()
-        self.initialize_board()
-    
+
     def initialize_board(self):
         # Draws cards from the deck and places them on the tableaus
         for y in range(0, 7):
@@ -115,17 +117,19 @@ class Board:
             try:
                 print(f"Input 'commands' to show list of commands")
                 command = input("Command: ")
-                split_string = command.upper().strip().split(" ")
+                split_string = command.strip().split(" ")
             
                 option = split_string[0]
                 if option in ["MOVE", "M"]:
-                    self.attempt_move(split_string[1], split_string [2:])
+                    self.attempt_move(split_string[1].upper(), split_string [2:].upper())
                 elif option == ["COMMANDS", "C"]:
                     self.show_commands()
                 elif option == "DRAW" or option == "D":
                     self.game_draw(3)
                 elif option in ["SAVE", "S"]:
                     self.save_game(split_string[1])
+                elif option in ["LOAD", "L"]:
+                    self.load_game(split_string[1])
                 elif option in ["QUIT"]:
                     return
                 elif option in ["EXIT"]:
@@ -158,7 +162,7 @@ class Board:
                     self.save_data(filepath)
             else:
                 self.save_data(filepath)
-                    
+
     def save_data(self, filepath):
         data = {"stock": [(card.rank.symbol,card.suit.suit_text) for card in self.stock], 
             "waste": [(card.rank.symbol,card.suit.suit_text) for card in self.waste],
@@ -355,13 +359,18 @@ def main():
         print(f"CLI Klondike Solitaire")
         print(f"{'-' * 30}")
         print(f"{"Options":<10}1 - New Game")
-        print(f"{"":<10}2 - Exit")
+        print(f"{"":<10}2 - Load Game")
+        print(f"{"":<10}3 - Exit")
         option = input("Enter Input: ")  
         
         if option == "1":
             game = Board()
+            game.stock.add_standard_deck()
+            game.stock.shuffle()
             game.game()
         elif option == "2":
+            pass
+        elif option == "3":
             exit = True
         
     
