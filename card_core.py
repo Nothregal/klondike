@@ -74,10 +74,13 @@ class Card:
     
     def __format__(self, format_spec):
         return format(str(self), format_spec)
+
+    def data(self):
+        return self.rank.symbol, self.suit.symbol, self.is_facedown, self.is_joker
         
     def __repr__(self):
         if self.is_joker:
             return "Card(is_joker=True)"
-        return f"Card(rank='{self.rank.name}' suit='{self.suit.name}')"
+        return f"Card(rank='{self.rank.symbol}' suit='{self.suit.symbol}')"
 
 
