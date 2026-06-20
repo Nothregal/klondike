@@ -61,7 +61,7 @@ class Board:
         self.tableaus = [Deck() for _ in range(7)]
         self.foundations = [Deck() for _ in range(4)]
 
-    def initialize_board(self):
+    def new_game_board(self):
         self.stock.add_standard_deck()
         self.stock.shuffle()
         # Draws cards from the deck and places them on the tableaus
@@ -360,7 +360,8 @@ def main():
     """Main menu for options and starting game"""
     
     exit = False
-    
+    game = Board()
+
     while not exit:
         
         print(f"CLI Klondike Solitaire")
@@ -371,8 +372,8 @@ def main():
         option = input("Enter Input: ")  
         
         if option == "1":
-            game = Board()
-            game.initialize_board()
+            game.initialize_decks()
+            game.new_game_board()
             game.game()
         elif option == "2":
             pass
