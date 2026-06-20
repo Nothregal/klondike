@@ -51,10 +51,9 @@ class Deck:
 class Board:
     def __init__(self):
         # Generate containers for the gameboard
-        self.initialize_deck()
-        self.initialize_board()
+        self.initialize_decks()
     
-    def initialize_deck(self):
+    def initialize_decks(self):
         # Create new deck objects for game containers
         self.stock = Deck()
         self.waste = Deck()
@@ -62,6 +61,8 @@ class Board:
         self.foundations = [Deck() for _ in range(4)]
 
     def initialize_board(self):
+        self.stock.add_standard_deck()
+        self.stock.shuffle()
         # Draws cards from the deck and places them on the tableaus
         for y in range(0, 7):
             for x in range(y, 7):
@@ -119,9 +120,9 @@ class Board:
                 command = input("Command: ")
                 split_string = command.strip().split(" ")
             
-                option = split_string[0]
+                option = split_string[0].upper()
                 if option in ["MOVE", "M"]:
-                    self.attempt_move(split_string[1].upper(), split_string [2:].upper())
+                    self.attempt_move(split_string[1].upper(), split_string [2:])
                 elif option == ["COMMANDS", "C"]:
                     self.show_commands()
                 elif option == "DRAW" or option == "D":
@@ -367,8 +368,7 @@ def main():
         
         if option == "1":
             game = Board()
-            game.stock.add_standard_deck()
-            game.stock.shuffle()
+            game.initialize_board()
             game.game()
         elif option == "2":
             pass
