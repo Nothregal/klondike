@@ -52,6 +52,7 @@ class Board:
     def __init__(self):
         # Generate containers for the gameboard
         self.initialize_decks()
+        self.ingame = False
     
     def initialize_decks(self):
         # Create new deck objects for game containers
@@ -112,7 +113,8 @@ class Board:
     def game(self):
         """Main game method """
         exit = False
-        
+        self.ingame = True
+
         while not exit:
             self.show_board()
             try:
@@ -132,6 +134,7 @@ class Board:
                 elif option in ["LOAD", "L"]:
                     self.load_game(split_string[1])
                 elif option in ["QUIT"]:
+                    self.ingame = False
                     return
                 elif option in ["EXIT"]:
                     sys.exit(0)
@@ -185,6 +188,7 @@ class Board:
             
         if done:
             print(f"----------   You Win!   ----------")
+            self.ingame = False
             return done
         return done
         
