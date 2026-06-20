@@ -27,6 +27,10 @@ class Deck:
     def add(self, card):
         self.cards.append(card)
     
+    def add_cards(self, card_list):
+        for card in card_list:
+             self.cards.append(card)
+
     def show_card(self, index = None):
         if index is None:
             index = len(self) - 1
@@ -132,7 +136,7 @@ class Board:
                 elif option in ["SAVE", "S"]:
                     self.save_game(split_string[1])
                 elif option in ["LOAD", "L"]:
-                    self.load_game(split_string[1])
+                    self.load_game()
                 elif option in ["QUIT"]:
                     self.ingame = False
                     return
@@ -169,6 +173,52 @@ class Board:
             else:
                 self.save_data(filepath)
 
+    def load_game(self):
+        """ Check if savefile exists and load data inside"""
+        print(f"Loading Game...")
+        filepath = Path.cwd() / "saves"
+        game_files = [f.name.split(".")[0] for f in filepath.glob("*.json") if f.is_file()]
+
+        if not game_files: # Check if directory doesn't exist
+            print("No saves found.")
+            return False
+        else:
+            print(f"List of Saves: ")
+            for index, file in enumerate(game_files, start=1):
+                print(f"{index} - {file}")
+            try: # Check if user inputs an integer
+                index = int(input(f"Enter save number: ")) - 1
+            except ValueError:
+                print("Invalid Input")
+                return False
+            if 0 <= index < len(game_files): #Check if user input within save index
+                filepath = filepath / f"{game_files[index]}.json"
+            else:
+                print("Invalid Input")
+                return False
+            if self.ingame: #Check if there is a game currently running
+                if input("Loading will remove current game. Continue? Y-yes: "):
+                    self.load_data(filepath)
+                    return True
+                else:
+                    return False
+            else:
+                self.load_data(filepath)
+                return True
+
+    def load_data(self, filepath):
+        """ Obtain Board data from JSON file"""
+        self.initialize_decks()
+        with filepath.open("r", encoding="utf-8") as f:
+            file_data = json.load(f)
+            self.stock.add_cards([Card(Rank.return_symbol(data[0]),Suit.return_symbol(data[1]), data[2], data[3]) for data in file_data["stock"]])
+            self.waste.add_cards([Card(Rank.return_symbol(data[0]),Suit.return_symbol(data[1]), data[2], data[3]) for data in file_data["waste"]])
+            for index, foundation in enumerate(file_data["foundations"]):
+                self.foundations[index].add_cards([Card(Rank.return_symbol(data[0]),Suit.return_symbol(data[1]), data[2], data[3]) for data in foundation ])
+            for index, tableau in enumerate(file_data["tableaus"]):
+                self.tableaus[index].add_cards([Card(Rank.return_symbol(data[0]),Suit.return_symbol(data[1]), data[2], data[3]) for data in tableau ])
+            self.ingame = True
+            
     def save_data(self, filepath):
         """ Save card data to dictionary to put into JSON file """
         data = {"stock": [card.data() for card in self.stock],
@@ -351,7 +401,7 @@ class Board:
         print(f"    ex. Move AS (Ace of Spades)")
         print(f"Draw - draws 3 cards from stock and places it on the waste")
         print(f"Save 'filename' - Saves current game to filename")
-        print(f"Load 'filename' - Loads game from filename")
+        print(f"Load - Loads game from filename")
         print(f"Quit - Returns to Main Menu")
         print(f"Exit - Exits Program")
         input("\nPress Enter to Return to game")
@@ -376,7 +426,8 @@ def main():
             game.new_game_board()
             game.game()
         elif option == "2":
-            pass
+            if(game.load_game()):
+                game.game()
         elif option == "3":
             exit = True
         
