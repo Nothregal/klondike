@@ -36,7 +36,7 @@ class Deck:
             return self.cards[index]
         
     def draw(self) -> Card:
-        """Pop from the end of the lsit"""
+        """Pop from the end of the list"""
         if not self.cards:
             return None
         else:
@@ -51,10 +51,10 @@ class Deck:
 class Board:
     def __init__(self):
         # Generate containers for the gameboard
-        self.initialize_deck()
-        self.initialize_board()
+        self.initialize_decks()
+        self.ingame = False
     
-    def initialize_deck(self):
+    def initialize_decks(self):
         # Create new deck objects for game containers
         self.stock = Deck()
         self.waste = Deck()
@@ -62,6 +62,8 @@ class Board:
         self.foundations = [Deck() for _ in range(4)]
 
     def initialize_board(self):
+        self.stock.add_standard_deck()
+        self.stock.shuffle()
         # Draws cards from the deck and places them on the tableaus
         for y in range(0, 7):
             for x in range(y, 7):
@@ -111,7 +113,8 @@ class Board:
     def game(self):
         """Main game method """
         exit = False
-        
+        self.ingame = True
+
         while not exit:
             self.show_board()
             try:
@@ -119,9 +122,9 @@ class Board:
                 command = input("Command: ")
                 split_string = command.strip().split(" ")
             
-                option = split_string[0]
+                option = split_string[0].upper()
                 if option in ["MOVE", "M"]:
-                    self.attempt_move(split_string[1].upper(), split_string [2:].upper())
+                    self.attempt_move(split_string[1].upper(), split_string [2:])
                 elif option == ["COMMANDS", "C"]:
                     self.show_commands()
                 elif option == "DRAW" or option == "D":
@@ -131,6 +134,7 @@ class Board:
                 elif option in ["LOAD", "L"]:
                     self.load_game(split_string[1])
                 elif option in ["QUIT"]:
+                    self.ingame = False
                     return
                 elif option in ["EXIT"]:
                     sys.exit(0)
@@ -142,11 +146,13 @@ class Board:
             exit = self.check_win()
      
     def clean_filename(self, filename):
+        """ Check if filename is valid"""
         pattern = r'[<>:"/\\|?*]'
 
         return False if re.search(filename, pattern) else True    
         
     def save_game(self, filename = ""):
+        """ Check if filename exists and confirm overwrite"""
         print(f"Saving Game...")
         filepath = Path.cwd() / "saves"
 
@@ -163,7 +169,22 @@ class Board:
             else:
                 self.save_data(filepath)
 
+    def load_game(self, filename = ""):
+        """ Check if savefile exists and load data inside"""
+        print(f"Loading Game...")
+        filepath = Path.cwd() / "saves"
+
+        if not filepath.exists():
+            print("No saves found.")
+            return False
+        else:
+            filepath = filepath / f"{filename}.json"
+            if not filepath.exists():
+                print("Cannot find savefile")
+
+
     def save_data(self, filepath):
+        """ Save card data to dictionary to put into JSON file """
         data = {"stock": [(card.rank.symbol,card.suit.suit_text) for card in self.stock], 
             "waste": [(card.rank.symbol,card.suit.suit_text) for card in self.waste],
             "foundations": [[(card.rank.symbol,card.suit.suit_text) for card in deck] for deck in self.foundations],
@@ -181,6 +202,7 @@ class Board:
             
         if done:
             print(f"----------   You Win!   ----------")
+            self.ingame = False
             return done
         return done
         
@@ -315,8 +337,7 @@ class Board:
             self.tableau_move_valid(source, index, tableau)
         else:
             self.foundation_move_valid(source, index)
-            
-            
+
     def move_cards(self, source, index, tableau_index=None):
         """Once attempt_move has cleared all checks, move the card and connected cards to the new tableau"""
         placeholder_deck = Deck()
@@ -365,8 +386,7 @@ def main():
         
         if option == "1":
             game = Board()
-            game.stock.add_standard_deck()
-            game.stock.shuffle()
+            game.initialize_board()
             game.game()
         elif option == "2":
             pass
