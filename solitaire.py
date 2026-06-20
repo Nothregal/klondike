@@ -174,37 +174,40 @@ class Board:
                 self.save_data(filepath)
 
     def load_game(self):
-        """ Check if savefile exists and load data inside"""
+        """ Displays available JSON save files, prompts the user, and loads the selected game."""
         print(f"Loading Game...")
+
+        # Centralize path definition and find file objects
         filepath = Path.cwd() / "saves"
-        game_files = [f.name.split(".")[0] for f in filepath.glob("*.json") if f.is_file()]
+        game_files = sorted([f for f in filepath.glob("*.json") if f.is_file()])
 
         if not game_files: # Check if directory doesn't exist
             print("No saves found.")
             return False
-        else:
-            print(f"List of Saves: ")
-            for index, file in enumerate(game_files, start=1):
-                print(f"{index} - {file}")
-            try: # Check if user inputs an integer
-                index = int(input(f"Enter save number: ")) - 1
-            except ValueError:
-                print("Invalid Input")
+
+        # Display existing saves
+        print(f"\nList of Saves: ")
+        for index, file in enumerate(game_files, start=1):
+            print(f"{index} - {file.stem}")
+
+        #Handle and validate user numeric input safely
+        try:
+            index = int(input(f"Enter save number: "))
+            if not 0 <= index < len(game_files):
+                raise ValueError # Manually trigger except block if choice is out of range
+        except ValueError:
+            print("Invalid Input: Please enter a valid number from the list.")
+            return False
+
+        selected_file = game_files[index - 1]
+
+        if self.ingame: #Check if there is a game currently running
+            confirm = input("Loading will remove current game. Continue? Y-yesL ").strip().lower()
+            if confirm != 'y':
                 return False
-            if 0 <= index < len(game_files): #Check if user input within save index
-                filepath = filepath / f"{game_files[index]}.json"
-            else:
-                print("Invalid Input")
-                return False
-            if self.ingame: #Check if there is a game currently running
-                if input("Loading will remove current game. Continue? Y-yes: "):
-                    self.load_data(filepath)
-                    return True
-                else:
-                    return False
-            else:
-                self.load_data(filepath)
-                return True
+
+        self.load_data(selected_file)
+        return True
 
     def load_data(self, filepath):
         """ Obtain Board data from JSON file"""
